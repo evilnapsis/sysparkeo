@@ -1,0 +1,407 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Dashboard General - SysParkeo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Encabezado del Dashboard -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Panel de Control</h2>
+      <p class="text-muted mb-0">Resumen operativo, recaudación de pagos y control de estacionamiento.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ base_url }}/monitor" class="btn btn-outline-primary">
+        <i class="bi bi-grid-3x3-gap me-1"></i> Monitor de Cajones
+      </a>
+      <a href="{{ base_url }}/rents/new" class="btn btn-primary">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Registrar Ingreso
+      </a>
+    </div>
+  </div>
+
+  <!-- Widgets Contadores -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-primary shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Cajones Totales</div>
+            <div class="fs-3 fw-bold my-1">{{ total_spaces }}</div>
+            <div class="small text-white-50">Capacidad del parking</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-p-square-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-success shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Cajones Libres</div>
+            <div class="fs-3 fw-bold my-1">{{ available_count }}</div>
+            <div class="small text-white-50">{{ 100 - occupancy_rate }}% disponible</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-check-circle"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-danger shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Cajones Ocupados</div>
+            <div class="fs-3 fw-bold my-1">{{ occupied_count }}</div>
+            <div class="small text-white-50">{{ occupancy_rate }}% de ocupación</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-car-front-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-warning shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Recaudado Hoy</div>
+            <div class="fs-3 fw-bold my-1">${{ income_today|number_format(2, '.', ',') }}</div>
+            <div class="small text-white-50">{{ total_rents_today }} ingresos hoy</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-cash-stack"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfica de Pagos de los Últimos 30 Días -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h5 class="mb-0 fw-bold text-gray-800">
+          <i class="bi bi-graph-up-arrow text-primary me-2"></i>Recaudación de Pagos (Últimos 30 Días)
+        </h5>
+        <small class="text-muted">Total de cobros diarios registrados por concepto de estacionamiento</small>
+      </div>
+      <div>
+        <span class="badge bg-light text-dark border p-2 fs-6">
+          Total 30 Días: <strong class="text-success">${{ total_income_30d|number_format(2, '.', ',') }}</strong>
+        </span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="paymentsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fila 2: Top 10 Espacios Libres y Últimos Clientes Registrados -->
+  <div class="row g-4 mb-4">
+    <!-- Espacios libres top 10 -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="m-0 fw-bold text-gray-800">
+            <i class="bi bi-p-circle text-success me-1"></i> Espacios Libres Disponibles (Top 10)
+          </h6>
+          <span class="badge bg-success">{{ available_count }} disponibles</span>
+        </div>
+        <div class="card-body p-0">
+          {% if top_available_spaces is empty %}
+            <div class="text-center py-4 text-muted">
+              <i class="bi bi-slash-circle fs-2 d-block mb-1 text-danger"></i>
+              No hay espacios libres en este momento. Estacionamiento lleno.
+            </div>
+          {% else %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0 no-datatable">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Cajón</th>
+                    <th>Sección</th>
+                    <th>Tarifa/Hora</th>
+                    <th class="text-end">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for sp in top_available_spaces %}
+                    <tr>
+                      <td><span class="badge bg-dark">{{ sp.code }}</span></td>
+                      <td class="fw-bold">{{ sp.name }}</td>
+                      <td>
+                        <span class="badge bg-light text-dark border">
+                          {{ sp.section ? sp.section.name : 'General' }}
+                        </span>
+                      </td>
+                      <td class="text-success fw-semibold">${{ sp.price_hour|number_format(2) }}</td>
+                      <td class="text-end">
+                        <a href="{{ base_url }}/rents/new?space_id={{ sp.id }}" class="btn btn-xs btn-outline-success">
+                          <i class="bi bi-box-arrow-in-right me-1"></i> Estacionar
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+        {% if top_available_spaces is not empty %}
+          <div class="card-footer bg-white border-top text-end py-2">
+            <a href="{{ base_url }}/spaces" class="btn btn-xs btn-outline-secondary">
+              Ver Todos los Cajones <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Últimos Clientes Registrados -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="m-0 fw-bold text-gray-800">
+            <i class="bi bi-people text-info me-1"></i> Últimos Clientes Registrados
+          </h6>
+          <a href="{{ base_url }}/customers" class="btn btn-xs btn-outline-primary">
+            Ver Todos ({{ total_customers }})
+          </a>
+        </div>
+        <div class="card-body p-0">
+          {% if latest_customers is empty %}
+            <div class="text-center py-4 text-muted">
+              <i class="bi bi-people fs-2 d-block mb-1"></i>
+              No hay clientes habituales registrados aún.
+            </div>
+          {% else %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0 no-datatable">
+                <thead class="table-light">
+                  <tr>
+                    <th># ID</th>
+                    <th>Cliente</th>
+                    <th>Teléfono</th>
+                    <th>Vehículos</th>
+                    <th>Fecha Reg.</th>
+                    <th class="text-end">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for c in latest_customers %}
+                    <tr>
+                      <td>#{{ c.id }}</td>
+                      <td class="fw-bold">{{ c.name }}</td>
+                      <td>{{ c.phone ?: '-' }}</td>
+                      <td>
+                        <span class="badge bg-info text-dark">
+                          <i class="bi bi-car-front me-1"></i>{{ c.getVehiclesCount() }}
+                        </span>
+                      </td>
+                      <td><small class="text-muted">{{ c.created_at|date('d/m/Y') }}</small></td>
+                      <td class="text-end">
+                        <a href="{{ base_url }}/customers/edit/{{ c.id }}" class="btn btn-xs btn-outline-secondary" title="Editar">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-white border-top text-end py-2">
+          <a href="{{ base_url }}/customers/new" class="btn btn-xs btn-primary">
+            <i class="bi bi-person-plus me-1"></i> Nuevo Cliente
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fila 3: Últimos Accesos Registrados -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+      <h6 class="m-0 fw-bold text-gray-800">
+        <i class="bi bi-clock-history text-primary me-2"></i>Últimos Accesos Registrados
+      </h6>
+      <a href="{{ base_url }}/rents" class="btn btn-xs btn-outline-primary">
+        Ver Historial Completo
+      </a>
+    </div>
+    <div class="card-body p-0">
+      {% if latest_rents is empty %}
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-receipt fs-2 d-block mb-1"></i>
+          No hay accesos registrados en el sistema.
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0 no-datatable">
+            <thead class="table-light">
+              <tr>
+                <th>Ticket #</th>
+                <th>Cajón</th>
+                <th>Cliente / Conductor</th>
+                <th>Vehículo / Placas</th>
+                <th>Ingreso</th>
+                <th>Salida</th>
+                <th>Estado</th>
+                <th>Importe</th>
+                <th class="text-end">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in latest_rents %}
+                {% set sp = r.space %}
+                {% set veh = r.vehicle %}
+                <tr>
+                  <td><strong>#{{ r.id }}</strong></td>
+                  <td>
+                    <span class="badge bg-dark">{{ sp ? sp.code : 'S/C' }}</span>
+                    <span class="ms-1">{{ sp ? sp.name : '-' }}</span>
+                  </td>
+                  <td class="fw-bold">
+                    {{ r.getClientName() }}
+                    {% if r.customer_id %}
+                      <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">Abonado</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if veh %}
+                      <span class="badge bg-secondary">{{ veh.plate }}</span> {{ veh.brand }} {{ veh.model }}
+                    {% else %}
+                      <span class="text-muted fst-italic">No asignado</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>{{ r.start_date }} {{ r.start_time }}</small>
+                  </td>
+                  <td>
+                    {% if r.finish_time %}
+                      <small class="text-muted"><i class="bi bi-calendar-check me-1"></i>{{ r.finish_date }} {{ r.finish_time }}</small>
+                    {% else %}
+                      <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>En estacionamiento</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.finish_time %}
+                      <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Cobrado</span>
+                    {% else %}
+                      <span class="badge bg-danger"><i class="bi bi-car-front me-1"></i>Ocupando</span>
+                    {% endif %}
+                  </td>
+                  <td class="fw-bold {{ r.finish_time ? 'text-success' : 'text-muted' }}">
+                    {% if r.finish_time %}
+                      ${{ r.price|number_format(2) }}
+                    {% else %}
+                      ${{ sp ? sp.price_hour|number_format(2) : '0.00' }}/h
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if not r.finish_time %}
+                      <a href="{{ base_url }}/rents/finish/{{ r.id }}" class="btn btn-xs btn-danger">
+                        <i class="bi bi-cash me-1"></i> Cobrar
+                      </a>
+                    {% else %}
+                      <a href="{{ base_url }}/rents/edit/{{ r.id }}" class="btn btn-xs btn-outline-secondary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const ctx = document.getElementById('paymentsChart');
+  if (ctx) {
+    const labels = {{ chart_labels_json|raw }};
+    const amounts = {{ chart_amounts_json|raw }};
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Pagos Recaudados ($)',
+          data: amounts,
+          borderColor: '#ea580c',
+          backgroundColor: 'rgba(234, 88, 12, 0.12)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: '#ea580c',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1.5,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ' Recaudado: $' + Number(context.raw).toFixed(2);
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              maxRotation: 45,
+              minRotation: 0
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            ticks: {
+              callback: function(value) {
+                return '$' + value;
+              },
+              font: {
+                size: 11
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

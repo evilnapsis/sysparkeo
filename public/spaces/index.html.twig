@@ -1,0 +1,91 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Cajones y Espacios de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Cajones y Espacios</h2>
+      <p class="text-muted mb-0">Gestión de cajones de aparcamiento, sección asignada y tarifas por hora/fracción.</p>
+    </div>
+    <a href="{{ base_url }}/spaces/new" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Nuevo Cajón
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Listado de Espacios</h6>
+    </div>
+    <div class="card-body p-0">
+      {% if spaces is empty %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-p-circle fs-1 d-block mb-2"></i>
+          No hay cajones o espacios configurados en el estacionamiento.
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Nombre del Cajón</th>
+                <th>Sección</th>
+                <th>Descripción</th>
+                <th>Tarifa Hora</th>
+                <th>Tarifa Fracción</th>
+                <th>Estado Actual</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in spaces %}
+                {% set sec = s.getSection() %}
+                <tr>
+                  <td><span class="badge bg-dark">{{ s.code ?: 'S/C' }}</span></td>
+                  <td class="fw-bold">{{ s.name }}</td>
+                  <td>
+                    {% if sec %}
+                      <span class="badge bg-info text-dark"><i class="bi bi-layers me-1"></i>{{ sec.name }}</span>
+                    {% else %}
+                      <span class="text-muted fst-italic">Sin sección</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ s.description ?: '-' }}</td>
+                  <td class="fw-bold text-success">${{ s.price_hour|number_format(2) }}</td>
+                  <td class="text-muted">${{ s.price_half|number_format(2) }}</td>
+                  <td>
+                    {% if s.is_occupied %}
+                      <span class="badge bg-danger"><i class="bi bi-car-front-fill me-1"></i> Ocupado</span>
+                    {% else %}
+                      <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Disponible</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if not s.is_occupied %}
+                      <a href="{{ base_url }}/rents/new?space_id={{ s.id }}" class="btn btn-xs btn-outline-success" title="Estacionar Vehículo">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                      </a>
+                    {% else %}
+                      <a href="{{ base_url }}/rents/finish/{{ s.current_rent.id }}" class="btn btn-xs btn-outline-warning" title="Cobrar y Liberar">
+                        <i class="bi bi-cash-stack"></i>
+                      </a>
+                    {% endif %}
+                    <a href="{{ base_url }}/spaces/edit/{{ s.id }}" class="btn btn-xs btn-outline-primary" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{{ base_url }}/spaces/delete/{{ s.id }}" class="btn btn-xs btn-outline-danger" title="Eliminar" onclick="return confirm('¿Seguro que deseas eliminar este cajón?')">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

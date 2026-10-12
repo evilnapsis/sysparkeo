@@ -1,0 +1,53 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Nuevo Cliente Habitual{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 700px;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Nuevo Cliente Habitual</h2>
+      <p class="text-muted mb-0">Registra los datos de un abonado o cliente frecuente.</p>
+    </div>
+    <a href="{{ base_url }}/customers" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Volver
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="POST" action="{{ base_url }}/customers/create">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Nombre Completo *</label>
+          <input type="text" name="name" class="form-control form-control-sm" required placeholder="Nombre y apellidos del cliente">
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Teléfono de Contacto</label>
+            <input type="text" name="phone" class="form-control form-control-sm" placeholder="Ej: 555-123-4567">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Correo Electrónico</label>
+            <input type="email" name="email" class="form-control form-control-sm" placeholder="correo@ejemplo.com">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Dirección / Residencia</label>
+          <input type="text" name="address" class="form-control form-control-sm" placeholder="Calle, número, colonia, ciudad">
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{{ base_url }}/customers" class="btn btn-sm btn-light">Cancelar</a>
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="bi bi-save me-1"></i> Guardar Cliente
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

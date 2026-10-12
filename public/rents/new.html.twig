@@ -1,0 +1,137 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Registrar Ingreso de Vehículo{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 800px;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Registrar Ingreso / Ticket</h2>
+      <p class="text-muted mb-0">Asigna un cajón libre al vehículo entrante.</p>
+    </div>
+    <a href="{{ base_url }}/home" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Volver al Monitor
+    </a>
+  </div>
+
+  {% if errors %}
+    <div class="alert alert-danger py-2">
+      <ul class="mb-0">
+        {% for err in errors %}
+          <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="POST" action="{{ base_url }}/rents/create">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Seleccionar Cajón / Espacio Disponible *</label>
+          <select name="space_id" class="form-select form-select-sm" required>
+            <option value="">-- Selecciona un cajón libre --</option>
+            {% for s in spaces %}
+              {% set sec = s.getSection() %}
+              <option value="{{ s.id }}" {{ selected_space == s.id ? 'selected' : '' }}>
+                [{{ s.code }}] {{ s.name }} ({{ sec ? sec.name : 'Sin sección' }}) - ${{ s.price_hour|number_format(2) }}/hr
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="card bg-light border p-3 mb-3">
+          <label class="form-label fw-bold mb-2">Tipo de Cliente:</label>
+          <div class="d-flex gap-4 mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="is_habitual" id="type_general" value="0" checked onchange="toggleClientType(false)">
+              <label class="form-check-label fw-semibold" for="type_general">
+                <i class="bi bi-person me-1"></i> No Habitual / Público General
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="is_habitual" id="type_habitual" value="1" onchange="toggleClientType(true)">
+              <label class="form-check-label fw-semibold" for="type_habitual">
+                <i class="bi bi-person-badge me-1"></i> Cliente Habitual / Abonado
+              </label>
+            </div>
+          </div>
+
+          <!-- Campos para cliente NO habitual -->
+          <div id="general_client_box">
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-muted">Nombre del Conductor / Referencia</label>
+              <input type="text" name="person_name" class="form-control form-control-sm" value="Público General" placeholder="Ej: Conductor particular, Juan Pérez">
+            </div>
+          </div>
+
+          <!-- Campos para cliente HABITUAL -->
+          <div id="habitual_client_box" style="display: none;">
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-muted">Seleccionar Cliente Habitual Registrado</label>
+              <select name="customer_id" class="form-select form-select-sm">
+                <option value="">-- Seleccionar cliente --</option>
+                {% for c in customers %}
+                  <option value="{{ c.id }}">{{ c.name }} ({{ c.phone ?: 'Sin teléfono' }})</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Vehículo Vinculado (Opcional)</label>
+          <select name="vehicle_id" class="form-select form-select-sm">
+            <option value="">-- Seleccionar vehículo registrado si aplica --</option>
+            {% for v in vehicles %}
+              {% set cust = v.getCustomer() %}
+              <option value="{{ v.id }}">
+                {{ v.plate }} - {{ v.brand }} {{ v.model }} {{ cust ? '(' ~ cust.name ~ ')' : '' }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Si el vehículo aún no está en el catálogo, puedes registrarlo en <a href="{{ base_url }}/vehicles/new" target="_blank">Vehículos</a>.</div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Fecha de Entrada *</label>
+            <input type="date" name="start_date" class="form-control form-control-sm" value="{{ current_date }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Hora de Entrada *</label>
+            <input type="time" name="start_time" class="form-control form-control-sm" value="{{ current_time }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Minutos de Cortesía</label>
+            <input type="number" name="bonus_mins" class="form-control form-control-sm" value="0" min="0" placeholder="0">
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{{ base_url }}/home" class="btn btn-sm btn-light">Cancelar</a>
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Asignar Cajón e Imprimir Ticket
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleClientType(isHabitual) {
+  var genBox = document.getElementById('general_client_box');
+  var habBox = document.getElementById('habitual_client_box');
+  if (isHabitual) {
+    genBox.style.display = 'none';
+    habBox.style.display = 'block';
+  } else {
+    genBox.style.display = 'block';
+    habBox.style.display = 'none';
+  }
+}
+</script>
+{% endblock %}

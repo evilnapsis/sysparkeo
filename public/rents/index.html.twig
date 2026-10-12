@@ -1,0 +1,148 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Tickets de Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Tickets de Estacionamiento</h2>
+      <p class="text-muted mb-0">Control de entradas, salidas, cálculo de tiempo y recaudación.</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <form method="GET" action="{{ base_url }}/rents" class="d-flex gap-2 align-items-center">
+        <input type="date" name="date_at" class="form-control form-control-sm" value="{{ current_date }}">
+        <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
+          <i class="bi bi-filter"></i> Filtrar
+        </button>
+      </form>
+      <a href="{{ base_url }}/rents/new" class="btn btn-sm btn-primary text-nowrap">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Registrar Ingreso
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-light">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase fw-bold">Fecha Consultada</div>
+          <div class="fs-5 fw-bold text-dark">{{ current_date }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-light">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase fw-bold">Total de Tickets</div>
+          <div class="fs-5 fw-bold text-dark">{{ rents|length }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-light">
+        <div class="card-body">
+          <div class="small text-muted text-uppercase fw-bold">Total Recaudado Hoy</div>
+          <div class="fs-5 fw-bold text-success">${{ total_day|number_format(2, '.', ',') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      {% if rents is empty %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-receipt-cutoff fs-1 d-block mb-3"></i>
+          <h5>No hay tickets registrados para la fecha seleccionada</h5>
+          <p>Puedes registrar un nuevo ingreso de vehículo o consultar otra fecha.</p>
+          <a href="{{ base_url }}/rents/new" class="btn btn-sm btn-primary mt-2">Registrar Ingreso</a>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Ticket #</th>
+                <th>Cajón</th>
+                <th>Sección</th>
+                <th>Cliente / Conductor</th>
+                <th>Vehículo / Placa</th>
+                <th>Entrada</th>
+                <th>Salida</th>
+                <th>Cortesía</th>
+                <th>Total Cobrado</th>
+                <th>Estado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rents %}
+                {% set sp = r.space %}
+                {% set sec = sp ? sp.getSection() : null %}
+                {% set veh = r.vehicle %}
+                <tr>
+                  <td><span class="badge bg-light text-dark border">#{{ r.id }}</span></td>
+                  <td>
+                    <strong>{{ sp ? sp.name : 'Cajón #' ~ r.space_id }}</strong>
+                    <small class="text-muted d-block">{{ sp ? sp.code : '' }}</small>
+                  </td>
+                  <td>{{ sec ? sec.name : '-' }}</td>
+                  <td>
+                    <span class="fw-bold">{{ r.getClientName() }}</span>
+                    {% if r.customer_id %}
+                      <span class="badge bg-primary ms-1" style="font-size:0.65rem;">Habitual</span>
+                    {% else %}
+                      <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">General</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if veh %}
+                      <span class="badge bg-dark">{{ veh.plate }}</span>
+                      <small class="text-muted d-block">{{ veh.brand }} {{ veh.model }}</small>
+                    {% else %}
+                      <span class="text-muted fst-italic">S/V</span>
+                    {% endif %}
+                  </td>
+                  <td><small class="text-muted">{{ r.start_time }}<br>{{ r.start_date }}</small></td>
+                  <td>
+                    {% if r.finish_time %}
+                      <small class="text-muted">{{ r.finish_time }}<br>{{ r.finish_date }}</small>
+                    {% else %}
+                      <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>En estacionamiento</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ r.bonus_mins }} min</td>
+                  <td class="fw-bold text-success">
+                    ${{ r.price|number_format(2, '.', ',') }}
+                  </td>
+                  <td>
+                    {% if r.is_active %}
+                      <span class="badge bg-danger">Ocupando</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Liberado</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if r.is_active %}
+                      <a href="{{ base_url }}/rents/finish/{{ r.id }}" class="btn btn-xs btn-outline-warning" title="Cobrar y Liberar">
+                        <i class="bi bi-cash-stack"></i> Cobrar
+                      </a>
+                    {% endif %}
+                    <a href="{{ base_url }}/rents/edit/{{ r.id }}" class="btn btn-xs btn-outline-primary" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{{ base_url }}/rents/delete/{{ r.id }}" class="btn btn-xs btn-outline-danger" title="Eliminar" onclick="return confirm('¿Seguro que deseas eliminar este ticket?')">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,246 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Monitor de Cajones - SysParkeo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Encabezado del Monitor -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Monitor de Cajones</h2>
+      <p class="text-muted mb-0">Supervisión visual en tiempo real de cajones por sección y ocupación de estacionamiento.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" onclick="window.location.reload();">
+        <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+      </button>
+      <a href="{{ base_url }}/rents/new" class="btn btn-primary">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Registrar Ingreso / Ticket
+      </a>
+    </div>
+  </div>
+
+  <!-- Contadores Generales de Ocupación -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-primary shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Total de Espacios</div>
+            <div class="fs-3 fw-bold my-1">{{ total_spaces }}</div>
+            <div class="small text-white-50">Capacidad total instalada</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-p-square-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-success shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Espacios Libres</div>
+            <div class="fs-3 fw-bold my-1">{{ available_count }}</div>
+            <div class="small text-white-50">{{ 100 - occupancy_rate }}% disponible</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-check-circle"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-danger shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Espacios Ocupados</div>
+            <div class="fs-3 fw-bold my-1">{{ occupied_count }}</div>
+            <div class="small text-white-50">{{ occupancy_rate }}% ocupado</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-car-front-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card text-white bg-info shadow-sm border-0 h-100">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-white-50 small text-uppercase fw-semibold">Tasa de Ocupación</div>
+            <div class="fs-3 fw-bold my-1">{{ occupancy_rate }}%</div>
+            <div class="small text-white-50">Índice general del parking</div>
+          </div>
+          <div class="fs-1 text-white-50">
+            <i class="bi bi-pie-chart-fill"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contadores por Sección -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+      <h6 class="m-0 fw-bold text-gray-800">
+        <i class="bi bi-layers text-primary me-2"></i>Contadores por Sección
+      </h6>
+      <span class="badge bg-secondary">{{ sections|length }} secciones configuradas</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for sec in sections %}
+          <div class="col-md-6 col-xl-4">
+            <div class="p-3 rounded border bg-light h-100">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h6 class="fw-bold mb-0 text-gray-800">{{ sec.name }}</h6>
+                  <small class="text-muted">{{ sec.description ?: 'Sin descripción' }}</small>
+                </div>
+                <span class="badge {{ sec.occupancy_rate > 80 ? 'bg-danger' : (sec.occupancy_rate > 40 ? 'bg-warning text-dark' : 'bg-success') }}">
+                  {{ sec.occupancy_rate }}% ocupado
+                </span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center small mt-3 pt-2 border-top">
+                <span class="text-muted">Total: <strong>{{ sec.total_spaces }}</strong></span>
+                <span class="text-success"><i class="bi bi-check-circle me-1"></i>Libres: <strong>{{ sec.available_count }}</strong></span>
+                <span class="text-danger"><i class="bi bi-car-front me-1"></i>Ocupados: <strong>{{ sec.occupied_count }}</strong></span>
+              </div>
+              <div class="progress mt-2" style="height: 6px;">
+                <div class="progress-bar {{ sec.occupancy_rate > 80 ? 'bg-danger' : (sec.occupancy_rate > 40 ? 'bg-warning' : 'bg-success') }}" 
+                     role="progressbar" style="width: {{ sec.occupancy_rate }}%;" aria-valuenow="{{ sec.occupancy_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Espacios Visuales (Mostrando 6 espacios por fila) -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 fw-bold text-gray-800">
+          <i class="bi bi-grid-3x3-gap text-primary me-2"></i>Cuadrícula de Cajones
+        </h5>
+        <span class="badge bg-light text-dark border">6 cajones por fila</span>
+      </div>
+
+      <!-- Filtro rápido por sección -->
+      <div class="btn-group btn-group-sm" role="group" aria-label="Filtro de Secciones">
+        <button type="button" class="btn btn-outline-primary active filter-btn" data-filter="all">Todos</button>
+        {% for sec in sections %}
+          <button type="button" class="btn btn-outline-primary filter-btn" data-filter="sec-{{ sec.id }}">{{ sec.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card-body">
+      {% if spaces is empty %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-p-circle fs-1 d-block mb-2"></i>
+          No hay cajones configurados todavía. <a href="{{ base_url }}/spaces/new">Crear el primer cajón</a>.
+        </div>
+      {% else %}
+        <!-- Grid de 6 columnas por fila: col-xl-2 col-lg-3 col-md-4 col-sm-6 -->
+        <div class="row g-3" id="spacesGrid">
+          {% for sp in spaces %}
+            {% set sec = sp.getSection() %}
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 space-item sec-{{ sp.section_id }}">
+              <div class="card h-100 border-2 {{ sp.is_occupied ? 'border-danger bg-danger-subtle' : 'border-success' }} shadow-sm">
+                <div class="card-body text-center p-3 d-flex flex-column justify-content-between">
+                  <!-- Header del cajón -->
+                  <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="badge bg-dark">{{ sp.code }}</span>
+                      {% if sec %}
+                        <span class="badge bg-info text-dark" style="font-size: 0.65rem;" title="{{ sec.name }}">
+                          {{ sec.name|length > 12 ? sec.name|slice(0, 12) ~ '..' : sec.name }}
+                        </span>
+                      {% endif %}
+                    </div>
+
+                    <!-- Icono grande -->
+                    <div class="my-2">
+                      {% if sp.is_occupied %}
+                        <i class="bi bi-car-front-fill text-danger" style="font-size: 2.2rem;"></i>
+                      {% else %}
+                        <i class="bi bi-p-square-fill text-success" style="font-size: 2.2rem;"></i>
+                      {% endif %}
+                    </div>
+
+                    <h6 class="fw-bold mb-1 text-truncate" title="{{ sp.name }}">{{ sp.name }}</h6>
+                    <span class="badge {{ sp.is_occupied ? 'bg-danger' : 'bg-success' }} mb-2">
+                      {{ sp.is_occupied ? 'OCUPADO' : 'LIBRE' }}
+                    </span>
+                  </div>
+
+                  <!-- Información y botón de acción -->
+                  <div class="mt-2">
+                    {% if sp.is_occupied and sp.current_rent %}
+                      {% set r = sp.current_rent %}
+                      {% set veh = r.getVehicle() %}
+                      <div class="small text-start bg-white p-2 rounded border mb-2" style="font-size: 0.78rem;">
+                        <div class="text-truncate">
+                          <strong><i class="bi bi-person me-1"></i></strong>{{ r.getClientName() }}
+                        </div>
+                        {% if veh %}
+                          <div class="text-truncate text-primary fw-bold">
+                            <i class="bi bi-car-front me-1"></i>{{ veh.plate }}
+                          </div>
+                        {% endif %}
+                        <div class="text-muted text-truncate">
+                          <i class="bi bi-clock me-1"></i>{{ r.start_time }}
+                        </div>
+                      </div>
+                      <a href="{{ base_url }}/rents/finish/{{ r.id }}" class="btn btn-xs btn-danger w-100">
+                        <i class="bi bi-cash-stack me-1"></i> Cobrar Salida
+                      </a>
+                    {% else %}
+                      <div class="small text-muted mb-2" style="font-size: 0.8rem;">
+                        ${{ sp.price_hour|number_format(2) }}/hora<br>
+                        ${{ sp.price_half|number_format(2) }}/fracción
+                      </div>
+                      <a href="{{ base_url }}/rents/new?space_id={{ sp.id }}" class="btn btn-xs btn-success w-100">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Estacionar
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const filterButtons = document.querySelectorAll(".filter-btn");
+  const spaceItems = document.querySelectorAll(".space-item");
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener("click", function () {
+      filterButtons.forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+
+      const filter = this.getAttribute("data-filter");
+      spaceItems.forEach(item => {
+        if (filter === "all" || item.classList.contains(filter)) {
+          item.style.display = "";
+        } else {
+          item.style.display = "none";
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

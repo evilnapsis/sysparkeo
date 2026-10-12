@@ -1,0 +1,201 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Reportes de Estacionamiento y Recaudación{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h3 class="fw-bold mb-0">Reporte de Estacionamiento y Recaudación</h3>
+    <small class="text-muted">Balance financiero y desglose de estancias por rango de fechas</small>
+  </div>
+  <div>
+    <a href="{{ base_url }}/reports/csv?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success btn-sm text-white shadow-sm">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i> Descargar Datos en CSV
+    </a>
+  </div>
+</div>
+
+<!-- Filtro por Rango de Fechas -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form method="get" action="{{ base_url }}/reports" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Fecha Inicial</label>
+        <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Fecha Final</label>
+        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}" required>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm fw-semibold px-3 flex-grow-1">
+          <i class="bi bi-filter me-1"></i> Filtrar Reporte
+        </button>
+        <a href="{{ base_url }}/reports/csv?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success btn-sm text-white fw-semibold px-3" title="Exportar a archivo CSV">
+          <i class="bi bi-download me-1"></i> CSV
+        </a>
+        <a href="{{ base_url }}/reports" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tarjetas de Resumen Financiero -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card text-white bg-success shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-4 fw-bold">${{ totalCobrado|number_format(2) }}</div>
+          <div class="text-white-50 small">Total Recaudado</div>
+        </div>
+        <i class="bi bi-cash-stack fs-1 opacity-50"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card text-white bg-primary shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-4 fw-bold">{{ totalRentas }}</div>
+          <div class="text-white-50 small">Total Tickets del Período</div>
+        </div>
+        <i class="bi bi-receipt-cutoff fs-1 opacity-50"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card text-white bg-info shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-4 fw-bold">{{ finalizadas }}</div>
+          <div class="text-white-50 small">Tickets Cobrados / Salidas</div>
+        </div>
+        <i class="bi bi-check2-circle fs-1 opacity-50"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card text-white bg-warning shadow-sm border-0">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fs-4 fw-bold text-dark">{{ activas }}</div>
+          <div class="text-dark small fw-semibold">Vehículos Aún Estacionados</div>
+        </div>
+        <i class="bi bi-car-front-fill fs-1 opacity-50 text-dark"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabla Detallada de Rentas -->
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h6 class="fw-bold mb-0 text-dark">
+      <i class="bi bi-table me-2 text-primary"></i>Detalle de Estancias ({{ start_date }} al {{ end_date }})
+    </h6>
+    <span class="badge bg-light text-dark border">{{ rents|length }} registros</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Ticket #</th>
+            <th>Cajón</th>
+            <th>Sección</th>
+            <th>Cliente / Conductor</th>
+            <th>Vehículo / Placa</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Cortesía</th>
+            <th>Total Cobrado</th>
+            <th>Estado</th>
+            <th class="text-end">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rents %}
+            {% set sp = r.space %}
+            {% set sec = sp ? sp.getSection() : null %}
+            {% set veh = r.vehicle %}
+            <tr>
+              <td class="fw-bold text-muted">#{{ r.id }}</td>
+              <td class="fw-semibold">
+                {% if sp %}
+                  <span class="badge bg-dark me-1">{{ sp.code }}</span> {{ sp.name }}
+                {% else %}
+                  <span class="text-muted">Cajón #{{ r.space_id }}</span>
+                {% endif %}
+              </td>
+              <td>{{ sec ? sec.name : '-' }}</td>
+              <td>
+                <span class="fw-bold">{{ r.getClientName() }}</span>
+                {% if r.customer_id %}
+                  <span class="badge bg-primary ms-1" style="font-size:0.65rem;">Habitual</span>
+                {% else %}
+                  <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">General</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if veh %}
+                  <span class="badge bg-dark">{{ veh.plate }}</span>
+                  <small class="text-muted d-block">{{ veh.brand }} {{ veh.model }}</small>
+                {% else %}
+                  <span class="text-muted fst-italic">S/V</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="small">{{ r.start_date }}</span>
+                <span class="badge bg-light text-dark border ms-1">{{ r.start_time }}</span>
+              </td>
+              <td>
+                {% if r.finish_time %}
+                  <span class="small">{{ r.finish_date ?: r.start_date }}</span>
+                  <span class="badge bg-light text-dark border ms-1">{{ r.finish_time }}</span>
+                {% else %}
+                  <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if r.bonus_mins > 0 %}
+                  <span class="badge bg-info text-dark">+{{ r.bonus_mins }} min</span>
+                {% else %}
+                  <span class="text-muted small">0</span>
+                {% endif %}
+              </td>
+              <td class="fw-bold text-success fs-6">${{ r.price|number_format(2) }}</td>
+              <td>
+                {% if r.is_active %}
+                  <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>En estancia</span>
+                {% else %}
+                  <span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>Cobrado</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="btn-group" role="group">
+                  {% if r.is_active %}
+                    <a href="{{ base_url }}/rents/finish/{{ r.id }}" class="btn btn-warning btn-xs" title="Cobrar / Finalizar">
+                      <i class="bi bi-cash me-1"></i>Cobrar
+                    </a>
+                  {% endif %}
+                  <a href="{{ base_url }}/rents/edit/{{ r.id }}" class="btn btn-outline-secondary btn-xs" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="11" class="text-center text-muted py-4">No se encontraron tickets en el rango de fechas seleccionado</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

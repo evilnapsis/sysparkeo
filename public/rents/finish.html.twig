@@ -1,0 +1,112 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Cobrar y Finalizar Estancia{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 750px;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Liquidación y Salida de Vehículo</h2>
+      <p class="text-muted mb-0">Cálculo de tiempo de estacionamiento y cobro de ticket.</p>
+    </div>
+    <a href="{{ base_url }}/home" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Volver al Monitor
+    </a>
+  </div>
+
+  {% set sp = rent.space %}
+  {% set sec = sp ? sp.getSection() : null %}
+  {% set veh = rent.vehicle %}
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white py-3">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-receipt me-2"></i>Ticket de Estacionamiento #{{ rent.id }}</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <div class="p-3 bg-light rounded border">
+            <div class="small text-muted text-uppercase fw-bold">Cajón de Estacionamiento</div>
+            <div class="fs-4 fw-bold text-dark">{{ sp ? sp.name : 'Espacio #' ~ rent.space_id }}</div>
+            <div class="badge bg-dark me-1">{{ sp ? sp.code : '' }}</div>
+            <div class="badge bg-info text-dark">{{ sec ? sec.name : 'Sin sección' }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-3 bg-light rounded border">
+            <div class="small text-muted text-uppercase fw-bold">Cliente / Conductor</div>
+            <div class="fs-5 fw-bold text-dark">{{ rent.getClientName() }}</div>
+            {% if veh %}
+              <div class="text-primary fw-bold mt-1">
+                <i class="bi bi-car-front me-1"></i>{{ veh.plate }} ({{ veh.brand }} {{ veh.model }})
+              </div>
+            {% else %}
+              <div class="text-muted small">Vehículo sin registrar</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive mb-4">
+        <table class="table table-sm table-bordered align-middle">
+          <tbody class="table-group-divider">
+            <tr>
+              <th class="table-light w-50">Hora y Fecha de Entrada</th>
+              <td><strong>{{ rent.start_time }}</strong> ({{ rent.start_date }})</td>
+            </tr>
+            <tr>
+              <th class="table-light">Hora y Fecha de Salida</th>
+              <td><strong>{{ calc.now_time }}</strong> ({{ calc.now_date }})</td>
+            </tr>
+            <tr>
+              <th class="table-light">Tiempo Total Transcurrido</th>
+              <td><span class="badge bg-secondary fs-6">{{ calc.minutes }} minutos</span></td>
+            </tr>
+            <tr>
+              <th class="table-light">Minutos de Cortesía / Bono</th>
+              <td>{{ rent.bonus_mins }} minutos</td>
+            </tr>
+            <tr>
+              <th class="table-light">Minutos Facturables</th>
+              <td><strong>{{ calc.billable_minutes }} minutos</strong></td>
+            </tr>
+            <tr>
+              <th class="table-light">Tarifas del Cajón</th>
+              <td>
+                ${{ sp ? sp.price_hour|number_format(2) : '20.00' }} / hora &nbsp;|&nbsp;
+                ${{ sp ? sp.price_half|number_format(2) : '12.00' }} / fracción
+              </td>
+            </tr>
+            <tr class="table-success">
+              <th class="fs-5 text-success">Total Sugerido a Cobrar</th>
+              <td class="fs-4 fw-bold text-success">${{ calc.cost|number_format(2) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <form method="POST" action="{{ base_url }}/rents/finish/{{ rent.id }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="finish_date" value="{{ calc.now_date }}">
+        <input type="hidden" name="finish_time" value="{{ calc.now_time }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Monto Definitivo a Cobrar ($) *</label>
+          <div class="input-group input-group-lg">
+            <span class="input-group-text">$</span>
+            <input type="number" step="0.5" name="price" class="form-control fw-bold text-success" value="{{ calc.cost }}" required>
+          </div>
+          <div class="form-text">Puedes ajustar el monto cobrado si aplica algún descuento o tarifa plana especial.</div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{{ base_url }}/home" class="btn btn-light">Cancelar</a>
+          <button type="submit" class="btn btn-success text-white btn-lg px-4">
+            <i class="bi bi-check2-circle me-1"></i> Cobrar y Liberar Cajón
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "layouts/main.html.twig" %}
+
+{% block title %}Secciones del Estacionamiento{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="h3 mb-0 text-gray-800">Secciones y Zonas</h2>
+      <p class="text-muted mb-0">Organización física del estacionamiento (pisos, áreas techadas, zonas VIP, etc.).</p>
+    </div>
+    <a href="{{ base_url }}/sections/new" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Nueva Sección
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Listado de Secciones</h6>
+    </div>
+    <div class="card-body p-0">
+      {% if sections is empty %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-layers fs-1 d-block mb-2"></i>
+          No hay secciones registradas aún.
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th># ID</th>
+                <th>Nombre de la Sección</th>
+                <th>Descripción / Ubicación</th>
+                <th>Cajones Asignados</th>
+                <th>Fecha Registro</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in sections %}
+                <tr>
+                  <td>#{{ s.id }}</td>
+                  <td class="fw-bold"><i class="bi bi-layers-fill text-primary me-2"></i>{{ s.name }}</td>
+                  <td>{{ s.description ?: '<span class="text-muted fst-italic">Sin descripción</span>'|raw }}</td>
+                  <td><span class="badge bg-info text-dark">{{ s.getSpacesCount() }} cajones</span></td>
+                  <td><small class="text-muted">{{ s.created_at }}</small></td>
+                  <td class="text-end">
+                    <a href="{{ base_url }}/sections/edit/{{ s.id }}" class="btn btn-xs btn-outline-primary" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{{ base_url }}/sections/delete/{{ s.id }}" class="btn btn-xs btn-outline-danger" title="Eliminar" onclick="return confirm('¿Seguro que deseas eliminar esta sección?')">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
